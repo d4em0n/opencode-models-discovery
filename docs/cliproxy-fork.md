@@ -6,6 +6,22 @@ upstream plugin ID, saved provider credentials, console and override APIs.
 
 ## Install
 
+OpenCode supports direct GitHub installation. This fork's `install/cliproxy`
+branch includes the verified runtime bundles, so it requires no local build:
+
+```sh
+opencode plugin add 'github:d4em0n/opencode-models-discovery#install/cliproxy'
+```
+
+Remove any previous models-discovery package/local-path entry first, retaining
+unrelated plugins. Keep the provider configuration shown below, but omit the
+local plugin path when using GitHub installation. `opencode plugin update`
+can update the branch install; use a complete commit hash instead of the branch
+when an immutable revision is required. The source-development branch and the
+initial release tag do not include the compiled bundles; use `install/cliproxy`.
+
+### Alternative: prebuilt archive
+
 Download the prebuilt `.tgz` from the [fork's releases](https://github.com/d4em0n/opencode-models-discovery/releases).
 Remove your existing models-discovery plugin entry, extract the archive to a permanent
 directory, and add its **`package/dist` directory** to `plugins` in your OpenCode config:
