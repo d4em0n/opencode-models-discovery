@@ -10,6 +10,7 @@ export interface ProviderDiscoveryOptions {
   readonly enabled: boolean
   readonly endpoint: string
   readonly timeoutMs: number
+  readonly refreshIntervalMs?: number
   readonly includeRegex: RegExp[]
   readonly excludeRegex: RegExp[]
   readonly includeBy: ModelFieldFilter[]
@@ -99,6 +100,9 @@ export function parseProviderDiscoveryOptions(raw: unknown): ProviderDiscoveryOp
     enabled: true,
     endpoint,
     timeoutMs,
+    refreshIntervalMs: typeof value.refreshIntervalMs === "number" && Number.isFinite(value.refreshIntervalMs) && value.refreshIntervalMs > 0
+      ? Math.min(2_147_483_647, Math.max(10_000, Math.floor(value.refreshIntervalMs)))
+      : 0,
     includeRegex: regexes(models?.includeRegex),
     excludeRegex: regexes(models?.excludeRegex),
     includeBy: filters(models?.includeBy),

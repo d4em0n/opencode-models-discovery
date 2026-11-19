@@ -7,6 +7,7 @@ import { isDiscoveredRawModel } from "../core/model-types.js"
 import { prepareModelEnricher, type ModelEnrichmentResult, type ModelEnricher } from "../core/model-enrichment.js"
 import { createDiscoveryCacheEntry, discoveryCacheKey, readDiscoveryCache, writeDiscoveryCache, type DiscoveryCacheBackend, type DiscoveryCacheEntry } from "../core/discovery-cache.js"
 import { resolveModelInfoEnricher } from "../core/enricher-resolver.js"
+import { ModelInfoFormat } from "../types/plugin-config.js"
 
 export interface DiscoveryLogger {
   warn(message: string, context?: Record<string, unknown>): void
@@ -141,6 +142,11 @@ export async function discoverInventory(
         }
         rawModels = payload.data
         enricher = resolvedEnricher
+        if (config.modelInfoFormat === ModelInfoFormat.CLIProxy && !enricher) {
+          // Keep the previous catalog during metadata outages rather than replacing
+          // deployment limits and reasoning options with generic defaults.
+          return
+        }
       }
 
       if (!cached) {

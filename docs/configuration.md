@@ -44,6 +44,17 @@ OpenCode v2 uses `plugins` and `providers`. The plugin can be declared directly 
 
 The V2 options are the same discovery options described below, except that their path starts with `providers.<id>.settings.modelsDiscovery`. V2 defaults the discovery endpoint to `/v1/models`, uses a default request timeout of 5000 ms, and requires `enabled: true` for the provider to participate. When discovery is explicitly enabled, the adapter attempts the configured model-list endpoint regardless of the provider package; the endpoint must return an OpenAI-compatible model-list response. For a provider such as DeepSeek that exposes `/models`, set `"endpoint": "/models"`. Local plugin development should use a directory URL such as `file:///absolute/path/to/opencode-models-discovery/dist`; OpenCode v2 does not accept a direct path to a JavaScript entry file.
 
+### Automatic refresh in OpenCode v2
+
+V2 also supports optional `modelsDiscovery.refreshIntervalMs` (default `0`, disabled;
+positive values are clamped to at least 10000 ms). It periodically refreshes all enabled
+discovery providers using the shortest configured interval. Timed refreshes bypass the
+discovery cache, apply updated metadata through the provider controller, do not overlap,
+and stop when the plugin location is disposed. `/models-discovery-refresh` remains
+available for an immediate refresh. Existing explicit model configuration and saved
+model overrides take precedence over discovered values; remove stale overrides to use
+the gateway's changing metadata.
+
 ### Credentials in OpenCode v2
 
 OpenCode v2 providers do not require a hardcoded `apiKey` in `opencode.json`. You can manage credentials via `/connect`:
@@ -372,6 +383,51 @@ The plugin currently supports ten model info formats:
 | `"ollama"` | Ollama's `/api/show` per-model endpoint | No | Uses `/api/show` by default; makes one POST per discovered model id; set `modelInfoEndpoint` for another path or a proxy URL |
 
 > **Configuration syntax**: All examples below use the primary **OpenCode v2** configuration shape (`providers.<id>.settings.modelsDiscovery`). The discovery options (`enabled`, `modelInfoFormat`, `models`, `smartModelName`, etc.) are identical between versions; for legacy OpenCode v1, place the same options under `provider.<id>.options.modelsDiscovery` (with `plugin: ["opencode-models-discovery"]` and `npm: "@ai-sdk/openai-compatible"`).
+
+### CLIProxyAPI
+
+Use `modelInfoFormat: "cliproxy"` to fetch the gateway's enhanced catalog beside its
+configured base URL: `models?client_version=opencode-models-discovery`. Reverse-proxy
+subpaths are preserved. Set `modelInfoEndpoint` to override that metadata URL, for
+example `/codex/models`. The ordinary discovery endpoint still supplies membership,
+so its model IDs remain unchanged. Native saved credentials authenticate both requests.
+
+```jsonc
+{
+  "providers": {
+    "gateway": {
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "https://gateway.example/v1",
+        "modelsDiscovery": {
+          "enabled": true,
+          "modelInfoFormat": "cliproxy",
+          "refreshIntervalMs": 300000,
+          "cache": { "enabled": false }
+        }
+      }
+    }
+  }
+}
+```
+
+Metadata is matched by exact `slug` (or `id`), including gateway aliases:
+
+| Gateway field | Discovered metadata |
+| --- | --- |
+| `context_window`, then `max_context_window` | Context limit; deployment default wins over extended maximum |
+| `max_tokens`, `max_output_tokens`, `max_completion_tokens` | Output limit, bounded by context; input reserves output within context |
+| `supported_reasoning_levels` (strings or `{effort}` objects) | Exactly those effort variants, including `max` and future levels |
+| `input_modalities` | Input modalities |
+| `display_name`, `name` | Optional smart display name |
+
+This mode does not contact models.dev or guess aliases. Missing output limits use
+the normal 32000-token fallback, bounded by context. Other absent or invalid fields
+remain unknown; models missing from the metadata catalog retain ordinary discovery
+defaults. An enhanced-catalog request failure preserves the previous V2 provider
+inventory instead of replacing its limits with defaults. Metadata is applied on
+startup, explicit refresh, and optional periodic refresh. Saved per-model overrides
+and explicit model configuration still win; remove stale overrides to follow updates.
 
 ### AIProxy Metadata
 

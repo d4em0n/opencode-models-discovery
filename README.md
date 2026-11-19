@@ -1,5 +1,8 @@
 # opencode-models-discovery
 
+This fork adds automatic CLIProxyAPI reasoning/context metadata and optional V2
+periodic refresh. See [fork installation and configuration](docs/cliproxy-fork.md).
+
 [![npm version](https://img.shields.io/npm/v/opencode-models-discovery.svg?color=blue)](https://www.npmjs.com/package/opencode-models-discovery)
 [![npm downloads](https://img.shields.io/npm/dt/opencode-models-discovery.svg)](https://www.npmjs.com/package/opencode-models-discovery)
 [![release](https://github.com/yuhp/opencode-models-discovery/actions/workflows/release.yml/badge.svg)](https://github.com/yuhp/opencode-models-discovery/actions/workflows/release.yml)
@@ -105,7 +108,12 @@ Enrichment is opt-in. Without `modelInfoFormat`, the plugin does not contact ext
 
 Supported formats include:
 
-`aiproxy`, `bifrost`, `litellm`, `lmstudio`, `llama-swap`, `models.dev`, `ollama`, `omniroute`, `openrouter`, and `vllm`.
+`aiproxy`, `bifrost`, `cliproxy`, `litellm`, `lmstudio`, `llama-swap`, `models.dev`, `ollama`, `omniroute`, `openrouter`, and `vllm`.
+
+For CLIProxyAPI, set `modelInfoFormat: "cliproxy"` to automatically apply the gateway's
+advertised reasoning efforts, context/output limits and input modalities. Optional
+V2 `refreshIntervalMs: 300000` refreshes model membership and metadata every five minutes.
+See [CLIProxyAPI configuration](docs/configuration.md#cliproxyapi).
 
 Example using `models.dev`:
 

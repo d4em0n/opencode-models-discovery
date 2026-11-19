@@ -9,6 +9,7 @@ import { discoveryCacheKey, isDiscoveryCacheFresh, sanitizeSensitiveFields } fro
 import { resolveProviderCredential } from "./credential-resolver.js"
 import { DiscoveryRpcDefinition, type RpcCacheEntry } from "./rpc.js"
 import { applyModelOverride, deleteModelOverride, listModelOverrides, setModelOverride } from "./overrides.js"
+import { createAutoRefresh } from "./auto-refresh.js"
 
 export function integrationID(providerID: string): string {
   return providerID
@@ -88,6 +89,7 @@ export async function setupV2(ctx: Plugin.Context): Promise<() => void> {
   const controller = createProviderController(ctx, providers, integrationID)
   let baselineInventory: Inventory = new Map()
   let transformsRegistration: Promise<void> | undefined
+  const autoRefresh = createAutoRefresh(() => refreshFromCurrentConfig(true))
 
   const ensureTransformsRegistered = async (): Promise<void> => {
     if (!transformsRegistration) {
@@ -124,6 +126,8 @@ export async function setupV2(ctx: Plugin.Context): Promise<() => void> {
     providers.splice(0, providers.length, ...configured.providers)
     discovery.clear()
     for (const [id, options] of configured.discovery) discovery.set(id, options)
+    const intervals = [...discovery.values()].map((options) => options.refreshIntervalMs ?? 0).filter((ms) => ms > 0)
+    autoRefresh.configure(intervals.length ? Math.min(...intervals) : 0)
 
     await ensureTransformsRegistered()
     return configured.providers.length > 0
@@ -467,7 +471,10 @@ export async function setupV2(ctx: Plugin.Context): Promise<() => void> {
     }
 })()
 
-  return () => abort.abort()
+  return () => {
+    autoRefresh.dispose()
+    abort.abort()
+  }
 }
 
 export default Plugin.define({

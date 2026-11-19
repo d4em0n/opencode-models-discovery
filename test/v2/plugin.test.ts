@@ -59,6 +59,42 @@ function context(overrides: Record<string, unknown> = {}) {
 }
 
 describe("V2 plugin entrypoint", () => {
+  it("refreshes deployment metadata on a timer even with discovery caching enabled", async () => {
+    vi.useFakeTimers()
+    const fetcher = vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => new Response(JSON.stringify(
+      String(url).includes("client_version=")
+        ? { models: [{ slug: "flash", context_window: 500_000, supported_reasoning_levels: ["max"] }] }
+        : { data: [{ id: "flash" }] },
+    )))
+    const cache = new Map<string, unknown>()
+    const ctx = context({ storage: {
+      get: async (key: string) => cache.get(key),
+      set: async (key: string, value: unknown) => { cache.set(key, value) },
+      list: async () => [],
+    } })
+    ctx.provider.list.mockResolvedValue({ data: [{
+      id: "local", package: "@opencode/ai/providers/openai-compatible",
+      settings: { baseURL: "http://127.0.0.1:1234/v1", modelsDiscovery: {
+        enabled: true, modelInfoFormat: "cliproxy", refreshIntervalMs: 10_000, cache: { enabled: true },
+      } },
+    }] })
+    let dispose: (() => void) | undefined
+    try {
+      dispose = await plugin.setup(ctx as never)
+      expect(fetcher).toHaveBeenCalledTimes(2)
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(fetcher).toHaveBeenCalledTimes(4)
+      expect(ctx.provider.reload).toHaveBeenCalledTimes(2)
+      dispose()
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect(fetcher).toHaveBeenCalledTimes(4)
+    } finally {
+      dispose?.()
+      fetcher.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
   it("registers provider and integration transforms, then reloads after discovery", async () => {
     const fetcher = vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,

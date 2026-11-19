@@ -8,6 +8,7 @@ import { createVLLMEnricher } from './vllm'
 import { createAIProxyEnricher } from './aiproxy'
 import { createOpenRouterEnricher } from './openrouter'
 import { createOllamaEnricher } from './ollama'
+import { createCLIProxyEnricher } from './cliproxy'
 import { ModelInfoFormat } from '../../types/plugin-config'
 import type { ModelEnricher, ModelEnricherDeferredContext, ModelEnrichmentContext } from '../../core/model-enrichment'
 
@@ -15,6 +16,7 @@ type ModelEnricherFactory = (data: unknown, options?: ModelEnrichmentContext) =>
 type DeferredModelEnricherFactory = (context: ModelEnricherDeferredContext) => ModelEnricher
 
 const MODEL_ENRICHERS: Partial<Record<ModelInfoFormat, ModelEnricherFactory>> = {
+  [ModelInfoFormat.CLIProxy]: (data) => createCLIProxyEnricher(data),
   [ModelInfoFormat.ModelsDev]: (data) => createModelsDevEnricher(data),
   [ModelInfoFormat.Bifrost]: (data) => createBifrostEnricher(data),
   [ModelInfoFormat.VLLM]: (data) => createVLLMEnricher(data),

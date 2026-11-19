@@ -7,6 +7,7 @@ export { buildModelInfoURL } from './model-info-url'
 
 export const DEFAULT_LITELLM_ENDPOINT = '/v1/model/info'
 export const DEFAULT_LMSTUDIO_ENDPOINT = '/api/v1/models'
+export const DEFAULT_CLIPROXY_ENDPOINT = 'models?client_version=opencode-models-discovery'
 export const DEFAULT_ENRICHER_TIMEOUT_MS = 5000
 
 export interface ModelInfoResolutionOptions {
@@ -83,8 +84,10 @@ export async function resolveModelInfoEnricher(
   })
   if (deferred) return deferred
 
-  if (format === ModelInfoFormat.LiteLLM || format === ModelInfoFormat.LMStudio) {
-    const defaultEndpoint = format === ModelInfoFormat.LiteLLM ? DEFAULT_LITELLM_ENDPOINT : DEFAULT_LMSTUDIO_ENDPOINT
+  if (format === ModelInfoFormat.LiteLLM || format === ModelInfoFormat.LMStudio || format === ModelInfoFormat.CLIProxy) {
+    const defaultEndpoint = format === ModelInfoFormat.CLIProxy
+      ? DEFAULT_CLIPROXY_ENDPOINT
+      : format === ModelInfoFormat.LiteLLM ? DEFAULT_LITELLM_ENDPOINT : DEFAULT_LMSTUDIO_ENDPOINT
     const targetEndpoint = options.endpoint ?? defaultEndpoint
     const infoUrl = buildModelInfoURL(context.baseURL, targetEndpoint)
 
