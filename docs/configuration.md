@@ -128,7 +128,7 @@ Each provider can configure discovery behavior through `provider.<name>.options.
 | `provider.<name>.options.modelsDiscovery.endpoint` | `string` | Provider-specific models endpoint as an origin-relative path beginning with `/`. Defaults to `/v1/models` |
 | `provider.<name>.options.modelsDiscovery.timeoutMs` | positive finite `number` | Per-request timeout for the provider's models and provider-specific metadata endpoints. Defaults to `3000` |
 | `provider.<name>.options.modelsDiscovery.modelInfoEndpoint` | `string` | Override a format-specific metadata endpoint as an origin-relative path or complete URL. Defaults to `/v1/model/info` for `"litellm"`, `/api/v1/models` for `"lmstudio"`, and `/api/show` for `"ollama"`; for `"aiproxy"`, it overrides the models.dev fallback URL |
-| `provider.<name>.options.modelsDiscovery.modelInfoFormat` | `string` | Model info response format. Currently supports `"aiproxy"`, `"bifrost"`, `"litellm"`, `"models.dev"`, `"vllm"`, `"lmstudio"`, `"llama-swap"`, `"omniroute"`, `"openrouter"`, and `"ollama"` |
+| `provider.<name>.options.modelsDiscovery.modelInfoFormat` | `string` | Model info response format. Currently supports `"aiproxy"`, `"bifrost"`, `"cliproxy"`, `"litellm"`, `"models.dev"`, `"vllm"`, `"lmstudio"`, `"llama-swap"`, `"omniroute"`, `"openrouter"`, and `"ollama"` |
 | `provider.<name>.options.modelsDiscovery.filterNonChat` | `boolean` | When model info is available, skip models whose `model_info.mode` is not `chat`. Defaults to `true` |
 | `provider.<name>.options.modelsDiscovery.pruneMissing` | `boolean` | OpenCode v2 only. Remove models from the provider's catalog when the provider's models endpoint doesn't list them by `id` or `modelID`, including ones excluded by the filters below. The plugin can't tell config-declared models from built-in ones, so any model it sees is pruned the same way; on OpenCode 2.2.5, models declared in `provider.<name>.models` were applied after the plugin and stayed. A failed refresh reuses the last successful list, and nothing is removed until one succeeds. Defaults to `false` |
 | `provider.<name>.options.modelsDiscovery.models.includeRegex` | `string[]` | Shortcut regex allow-list for discovered model ids only |
@@ -367,12 +367,13 @@ Community provider examples live in [`docs/config_example/`](config_example/).
 
 The generic OpenAI-compatible `/v1/models` endpoint only guarantees a small model list shape. Extra metadata such as context limits, tool calling, reasoning, image input, or structured output is provider-specific, so metadata enrichment is opt-in.
 
-The plugin currently supports ten model info formats:
+The plugin currently supports eleven model info formats:
 
 | Format | Source | Requires `modelInfoEndpoint` | Notes |
 |--------|--------|------------------------------|-------|
 | `"aiproxy"` | AIProxy's discovered `/models` entries plus models.dev | No | Maps inline AIProxy limits, pricing, and declared effort tiers; models.dev supplies general metadata |
 | `"bifrost"` | Fields in Bifrost's `/v1/models` response | No | Reads Bifrost inline limits, modalities, and base pricing when present |
+| `"cliproxy"` | CLIProxyAPI enhanced model catalog | No | Uses adjacent `models?client_version=opencode-models-discovery`; exact IDs supply effort variants and deployment limits |
 | `"litellm"` | Provider-specific model info endpoint | No | Uses `/v1/model/info` by default; set `modelInfoEndpoint` to override it |
 | `"models.dev"` | `https://models.dev/models.json` | No | Uses the public models.dev metadata index; limits advertised inline by the provider take precedence |
 | `"vllm"` | Fields in the provider's `/v1/models` response | No | Reads vLLM-style `max_model_len` when present |
